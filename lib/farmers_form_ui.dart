@@ -1,9 +1,75 @@
 import 'package:flutter/material.dart';
 
-import 'models.dart';
+// Model
+class Farmer {
+  String name;
+  String company;
+  String contact;
+  String location;
+  String notes;
 
+  Farmer({
+    this.name = '',
+    this.company = '',
+    this.contact = '',
+    this.location = '',
+    this.notes = '',
+  });
+
+  Map<String, String> toMap() {
+    return {
+      'Name': name,
+      'Company': company,
+      'Contact': contact,
+      'Location': location,
+      'Notes': notes,
+    };
+  }
+}
+
+// Controller
+class FarmerController extends ChangeNotifier {
+  final Farmer _farmer = Farmer();
+
+  void updateField(String field, String value) {
+    switch (field) {
+      case 'Name':
+        _farmer.name = value;
+        break;
+      case 'Company':
+        _farmer.company = value;
+        break;
+      case 'Contact':
+        _farmer.contact = value;
+        break;
+      case 'Location':
+        _farmer.location = value;
+        break;
+      case 'Notes':
+        _farmer.notes = value;
+        break;
+    }
+    notifyListeners();
+  }
+
+  void clearAll() {
+    _farmer.name = "";
+    _farmer.company = "";
+    _farmer.contact = "";
+    _farmer.location = "";
+    _farmer.notes = "";
+    notifyListeners();
+  }
+
+  Map<String, String> getFarmerData() {
+    return _farmer.toMap();
+  }
+}
+
+// View
 class FarmersForm extends StatelessWidget {
-  final Farmer farmer = Farmer.empty();
+  final FarmerController controller = FarmerController();
+
   FarmersForm({super.key});
 
   @override
@@ -11,65 +77,35 @@ class FarmersForm extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FARMERS'),
+        //backgroundColor: Colors.blue,
         leading: const Icon(Icons.arrow_back),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildInputField('Name', (value) => farmer.name = value),
-              _buildInputField('Company', (value) => farmer.company = value),
-              _buildInputField('Contact', (value) => farmer.contact = value),
-              _buildInputField('Location', (value) => farmer.location = value),
-              _buildInputField('Notes', (value) => farmer.notes = value),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () {
-                  print(farmer.toString());
-                  showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          content: Column(
-                            children: [
-                              const Text(
-                                'Do you want to save ?',
-                              ),
-                              _buildInputField(
-                                  'Name', (value) => farmer.name = value),
-                              _buildInputField(
-                                  'Company', (value) => farmer.company = value),
-                              _buildInputField(
-                                  'Contact', (value) => farmer.contact = value),
-                              _buildInputField('Location',
-                                  (value) => farmer.location = value),
-                              _buildInputField(
-                                  'Notes', (value) => farmer.notes = value),
-                            ],
-                          ),
-                          actions: <Widget>[
-                            ElevatedButton(
-                              child: const Text('YES'),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            ElevatedButton(
-                              child: const Text('NO'),
-                              onPressed: () {
-                                Navigator.of(context).pop(true);
-                              },
-                            ),
-                          ],
-                        );
-                      });
-                },
-                child: const Text('Save'),
+              _buildInputField('Name', controller),
+              _buildInputField('Company', controller),
+              _buildInputField('Contact', controller),
+              _buildInputField('Location', controller),
+              _buildInputField('Notes', controller),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    child: const Text('Save'),
+                    onPressed: () => _showFormDataDialog(context, controller),
+                  ),
+                  ElevatedButton(
+                      child: const Text('Clear'),
+                      onPressed: () => controller.clearAll()),
+                ],
               ),
-              const SizedBox(height: 20),
-              _buildTable(),
+              const SizedBox(height: 15),
+              _buildFarmersList()
             ],
           ),
         ),
@@ -77,81 +113,131 @@ class FarmersForm extends StatelessWidget {
     );
   }
 
-  Widget _buildInputField(String label, Function onChange) {
+  Widget _buildInputField(String label, FarmerController controller) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
+      padding: const EdgeInsets.only(bottom: 5.0),
       child: TextField(
-        onChanged: (value) => onChange(value),
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          border: const OutlineInputBorder(gapPadding: 0.00),
           // filled: true,
+          // fillColor: Colors.grey[200],
         ),
+        onChanged: (value) => controller.updateField(label, value),
       ),
     );
   }
 
-  Widget _buildTable() {
-    return Table(
-      border: TableBorder.all(),
-      children: [
-        _buildTableHeader(),
-        _buildTableRow('ani', 'AN', '9098675453', 'Edappal'),
-        _buildTableRow('babu', 'BA', '9876543211', 'Pattambi'),
-        _buildTableRow('cini', 'CI', '9876543222', 'Thrissur'),
-      ],
+  void _showFormDataDialog(BuildContext context, FarmerController controller) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        Map<String, String> farmerData = controller.getFarmerData();
+        return AlertDialog(
+          title: const Text('Form Data'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: farmerData.entries
+                .map((entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Text('${entry.key}: ${entry.value}'),
+                    ))
+                .toList(),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
-  TableRow _buildTableHeader() {
-    return TableRow(
-      // decoration: const BoxDecoration(color: Colors.blue),
-      children: ['Name', 'Company', 'Contact', 'Location', 'Activities']
-          .map((header) => TableCell(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(header,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold) //, color: Colors.white),
-                      ),
-                ),
-              ))
-          .toList(),
-    );
-  }
+  Widget _buildFarmersList() {
+    final farmers = [
+      {
+        'Name': 'Sunil',
+        'Company': 'ABC Company',
+        'Contact': '9098675453',
+        'Location': 'Edappal'
+      },
+      {
+        'Name': 'Rajesh',
+        'Company': 'XYZ Company',
+        'Contact': '9876543211',
+        'Location': 'Pattambi'
+      },
+      {
+        'Name': 'Ashraf',
+        'Company': 'CAD Company',
+        'Contact': '9876543222',
+        'Location': 'Thrissur'
+      },
+      {
+        'Name': 'Babu',
+        'Company': 'Future Company',
+        'Contact': '8877554422',
+        'Location': 'Ernakulam'
+      },
+    ];
 
-  TableRow _buildTableRow(
-      String name, String company, String contact, String location) {
-    return TableRow(
-      children: [
-        _buildTableCell(name),
-        _buildTableCell(company),
-        _buildTableCell(contact),
-        _buildTableCell(location),
-        TableCell(
-          child: Wrap(
-            direction: Axis.horizontal,
-            // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return ListView.builder(
+      // shrinkWrap: true,
+      // physics: const ScrollPhysics(), //NeverScrollableScrollPhysics(),
+      itemCount: farmers.length,
+      itemBuilder: (context, index) {
+        final farmer = farmers[index];
+        return Card(
+          child: ExpansionTile(
+            leading: CircleAvatar(
+              child: Text(farmer['Name']![0].toUpperCase()),
+            ),
+            title: Text(
+                "${farmer['Name']!}  -  ${farmer['Company']!}  -  ${farmer['Location']!}"),
             children: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.edit)),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
+              ...farmer.entries.map((entry) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(entry.key,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('  :  '),
+                        //const Spacer(),
+                        Text(entry.value),
+                      ],
+                    ),
+                  )),
+              Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: OverflowBar(
+                  alignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      child: const Text('Edit'),
+                      onPressed: () {},
+                      // style: ElevatedButton.styleFrom(primary: Colors.blue),
+                    ),
+                    const SizedBox(width: 15.00),
+                    ElevatedButton(
+                      child: const Text('Delete'),
+                      onPressed: () {},
+                      //  style: ElevatedButton.styleFrom(primary: Colors.blue),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTableCell(String text) {
-    return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          text,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
+        );
+      },
     );
   }
 }
